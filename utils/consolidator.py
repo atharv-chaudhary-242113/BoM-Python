@@ -1,16 +1,12 @@
 """
 Collects all cleaned rows and groups them by composite identity hashes.
+Aggregates category classifications for items spanning multiple domains.
 """
 
 from collections import OrderedDict
 
 
 def _identity_key(row: dict) -> str:
-    """
-    FIX: CATEGORY removed from the key. Keying by CAT NO. (or DESCRIPTION)
-    alone means the same item is merged regardless of minor category label
-    differences across sheets (e.g. capitalisation, trailing spaces).
-    """
     cat_no = str(row.get("CAT NO.") or "").strip()
     if cat_no:
         return f"cat::{cat_no}"
@@ -38,7 +34,7 @@ def consolidate(
 
             if key not in merged_store:
                 merged_store[key] = {
-                    "CATEGORY":         row["CATEGORY"],
+                    "CATEGORY":         str(row.get("CATEGORY", "")).strip(),
                     "DESCRIPTION":      row["DESCRIPTION"],
                     "SPEC":             row["SPEC"],
                     "MAKE":             row["MAKE"],
@@ -46,10 +42,19 @@ def consolidate(
                     "CAT NO.":          row["CAT NO."],
                     "panel_quantities": {p: None for p in all_panels},
                 }
+            else:
+                # Append unique categories to prevent arbitrary truncation
+                existing_cats = merged_store[key]["CATEGORY"].split(" | ")
+                new_cat = str(row.get("CATEGORY", "")).strip()
+                if new_cat and new_cat not in existing_cats and new_cat != "Uncategorized":
+                    if merged_store[key]["CATEGORY"] == "Uncategorized":
+                        merged_store[key]["CATEGORY"] = new_cat
+                    else:
+                        merged_store[key]["CATEGORY"] += f" | {new_cat}"
 
             merged = merged_store[key]
 
-            for field in ("DESCRIPTION", "SPEC", "MAKE", "UNIT", "CATEGORY"):
+            for field in ("DESCRIPTION", "SPEC", "MAKE", "UNIT"):
                 if not merged[field] and row.get(field):
                     merged[field] = row[field]
 
