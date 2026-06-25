@@ -1,0 +1,9 @@
+[project]
+name = "merge-bom"
+version = "0.2.0"
+requires-python = ">=3.12"
+dependencies = [
+    "pandas",
+    "openpyxl==3.1.2",
+    "numpy>=2.0",
+]
