@@ -240,16 +240,15 @@ def safety_check(
     if qty_ok:
         logger.info("PASS quantities: all panel totals match source.")
 
+        def _get_key(row: dict) -> str:
+            cat_no = str(row.get("CAT NO.") or "").strip()
+            if cat_no:
+                return f"cat::{cat_no}"
+            return f"desc::{str(row.get('DESCRIPTION', '')).strip()}"
+
         source_keys: set[str] = set()
         for row in all_source_rows:
-            cat = str(row.get("CATEGORY", "")).strip().upper()
-            cat_no = str(row.get("CAT NO.", "")).strip().upper()
-            desc = str(row.get("DESCRIPTION", "")).strip().upper()
-
-            if cat_no:
-                source_keys.add(f"{cat}__cat__{cat_no}")
-            else:
-                source_keys.add(f"{cat}__desc__{desc}")
+            source_keys.add(_get_key(row))
 
         output_count = len(sorted_rows)
 
